@@ -1263,20 +1263,39 @@ function DocumentsSidebarLink({ context }) {
 function DocumentsPage({ context }) {
   const [query, setQuery] = useState("");
   const [selectedDoc, setSelectedDoc] = useState(null);
+  const [showArchive, setShowArchive] = useState(false);
   const { data, loading, error, refresh } = usePluginData("documents", {
     companyId: context.companyId,
     query: query || void 0
   });
+  const { data: archivedData, loading: archiveLoading, refresh: refreshArchive } = usePluginData("archived-documents", {
+    companyId: context.companyId
+  });
   const reindex = usePluginAction("reindex");
+  const archiveAction = usePluginAction("archive");
+  const unarchiveAction = usePluginAction("unarchive");
   const [reindexing, setReindexing] = useState(false);
   async function handleReindex() {
     setReindexing(true);
     try {
       await reindex({ companyId: context.companyId });
       refresh();
+      refreshArchive();
     } finally {
       setReindexing(false);
     }
+  }
+  async function handleArchive(doc, e) {
+    e.stopPropagation();
+    await archiveAction({ issueId: doc.issueId, documentKey: doc.documentKey });
+    refresh();
+    refreshArchive();
+  }
+  async function handleUnarchive(doc, e) {
+    e.stopPropagation();
+    await unarchiveAction({ issueId: doc.issueId, documentKey: doc.documentKey });
+    refresh();
+    refreshArchive();
   }
   if (selectedDoc) {
     return /* @__PURE__ */ jsx(
@@ -1289,13 +1308,29 @@ function DocumentsPage({ context }) {
       }
     );
   }
-  const grouped = groupByProject(data?.documents ?? []);
+  const activeDocs = data?.documents ?? [];
+  const archivedDocs = archivedData?.documents ?? [];
+  const grouped = groupByProject(showArchive ? archivedDocs : activeDocs);
+  const archiveCount = archivedDocs.length;
   return /* @__PURE__ */ jsxs("div", { style: { padding: "24px", maxWidth: "960px", margin: "0 auto", color: "var(--foreground)" }, children: [
     /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }, children: [
-      /* @__PURE__ */ jsx("h1", { style: { fontSize: "20px", fontWeight: 600, margin: 0 }, children: "Documents" }),
-      /* @__PURE__ */ jsx("button", { onClick: handleReindex, disabled: reindexing, style: buttonStyle, children: reindexing ? "Indexing..." : "Reindex" })
+      /* @__PURE__ */ jsx("h1", { style: { fontSize: "20px", fontWeight: 600, margin: 0 }, children: showArchive ? "Archived Documents" : "Documents" }),
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: "8px" }, children: [
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            onClick: () => setShowArchive(!showArchive),
+            style: {
+              ...buttonStyle,
+              background: showArchive ? "var(--accent)" : "var(--card)"
+            },
+            children: showArchive ? "Back to Active" : `Archive${archiveCount ? ` (${archiveCount})` : ""}`
+          }
+        ),
+        !showArchive && /* @__PURE__ */ jsx("button", { onClick: handleReindex, disabled: reindexing, style: buttonStyle, children: reindexing ? "Indexing..." : "Reindex" })
+      ] })
     ] }),
-    /* @__PURE__ */ jsx(
+    !showArchive && /* @__PURE__ */ jsx(
       "input",
       {
         type: "text",
@@ -1305,23 +1340,33 @@ function DocumentsPage({ context }) {
         style: searchStyle
       }
     ),
-    loading && /* @__PURE__ */ jsx("p", { style: { color: "var(--muted-foreground)" }, children: "Loading..." }),
+    (loading || showArchive && archiveLoading) && /* @__PURE__ */ jsx("p", { style: { color: "var(--muted-foreground)" }, children: "Loading..." }),
     error && /* @__PURE__ */ jsxs("p", { style: { color: "#dc2626" }, children: [
       "Error: ",
       error.message
     ] }),
-    !loading && data && data.documents.length === 0 && /* @__PURE__ */ jsx("p", { style: { color: "var(--muted-foreground)", marginTop: "24px" }, children: data.lastIndexedAt ? "No documents found. Try a different search." : 'No documents indexed yet. Click "Reindex" to start.' }),
+    !loading && !showArchive && data && activeDocs.length === 0 && /* @__PURE__ */ jsx("p", { style: { color: "var(--muted-foreground)", marginTop: "24px" }, children: data.lastIndexedAt ? "No documents found. Try a different search." : 'No documents indexed yet. Click "Reindex" to start.' }),
+    showArchive && !archiveLoading && archivedDocs.length === 0 && /* @__PURE__ */ jsx("p", { style: { color: "var(--muted-foreground)", marginTop: "24px" }, children: "No archived documents." }),
     Object.entries(grouped).map(([projectName, docs]) => /* @__PURE__ */ jsxs("div", { style: { marginTop: "24px" }, children: [
       /* @__PURE__ */ jsx("h2", { style: { fontSize: "14px", fontWeight: 600, color: "var(--muted-foreground)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }, children: projectName }),
-      /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column", gap: "4px" }, children: docs.map((doc) => /* @__PURE__ */ jsx(DocRow, { doc, onClick: () => setSelectedDoc(doc) }, `${doc.issueId}-${doc.documentKey}`)) })
+      /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column", gap: "4px" }, children: docs.map((doc) => /* @__PURE__ */ jsx(
+        DocRow,
+        {
+          doc,
+          onClick: () => setSelectedDoc(doc),
+          onAction: showArchive ? (e) => handleUnarchive(doc, e) : (e) => handleArchive(doc, e),
+          actionLabel: showArchive ? "Unarchive" : "Archive"
+        },
+        `${doc.issueId}-${doc.documentKey}`
+      )) })
     ] }, projectName)),
-    data?.lastIndexedAt && /* @__PURE__ */ jsxs("p", { style: { marginTop: "24px", fontSize: "12px", color: "var(--muted-foreground)" }, children: [
+    !showArchive && data?.lastIndexedAt && /* @__PURE__ */ jsxs("p", { style: { marginTop: "24px", fontSize: "12px", color: "var(--muted-foreground)" }, children: [
       "Last indexed: ",
       new Date(data.lastIndexedAt).toLocaleString()
     ] })
   ] });
 }
-function DocRow({ doc, onClick }) {
+function DocRow({ doc, onClick, onAction, actionLabel }) {
   const [hovered, setHovered] = useState(false);
   return /* @__PURE__ */ jsxs(
     "div",
@@ -1349,6 +1394,25 @@ function DocRow({ doc, onClick }) {
             ")"
           ] })
         ] }),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            onClick: onAction,
+            style: {
+              padding: "3px 8px",
+              fontSize: "11px",
+              borderRadius: "4px",
+              border: "1px solid var(--border)",
+              background: "var(--background)",
+              color: "var(--muted-foreground)",
+              cursor: "pointer",
+              marginRight: "10px",
+              opacity: hovered ? 1 : 0,
+              transition: "opacity 0.15s"
+            },
+            children: actionLabel
+          }
+        ),
         /* @__PURE__ */ jsx("span", { style: { fontSize: "12px", color: "var(--muted-foreground)" }, children: new Date(doc.updatedAt).toLocaleDateString() })
       ]
     }

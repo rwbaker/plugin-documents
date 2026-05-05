@@ -56,11 +56,17 @@ export function DocumentsSidebarLink({ context }: PluginSidebarProps) {
 export function DocumentsPage({ context }: PluginPageProps) {
   const [query, setQuery] = useState('');
   const [selectedDoc, setSelectedDoc] = useState<DocumentEntry | null>(null);
+  const [showArchive, setShowArchive] = useState(false);
   const { data, loading, error, refresh } = usePluginData<DocumentsData>('documents', {
     companyId: context.companyId,
     query: query || undefined,
   });
+  const { data: archivedData, loading: archiveLoading, refresh: refreshArchive } = usePluginData<{ documents: DocumentEntry[] }>('archived-documents', {
+    companyId: context.companyId,
+  });
   const reindex = usePluginAction('reindex');
+  const archiveAction = usePluginAction('archive');
+  const unarchiveAction = usePluginAction('unarchive');
   const [reindexing, setReindexing] = useState(false);
 
   async function handleReindex() {
@@ -68,9 +74,24 @@ export function DocumentsPage({ context }: PluginPageProps) {
     try {
       await reindex({ companyId: context.companyId });
       refresh();
+      refreshArchive();
     } finally {
       setReindexing(false);
     }
+  }
+
+  async function handleArchive(doc: DocumentEntry, e: React.MouseEvent) {
+    e.stopPropagation();
+    await archiveAction({ issueId: doc.issueId, documentKey: doc.documentKey });
+    refresh();
+    refreshArchive();
+  }
+
+  async function handleUnarchive(doc: DocumentEntry, e: React.MouseEvent) {
+    e.stopPropagation();
+    await unarchiveAction({ issueId: doc.issueId, documentKey: doc.documentKey });
+    refresh();
+    refreshArchive();
   }
 
   if (selectedDoc) {
@@ -84,33 +105,59 @@ export function DocumentsPage({ context }: PluginPageProps) {
     );
   }
 
-  const grouped = groupByProject(data?.documents ?? []);
+  const activeDocs = data?.documents ?? [];
+  const archivedDocs = archivedData?.documents ?? [];
+  const grouped = groupByProject(showArchive ? archivedDocs : activeDocs);
+  const archiveCount = archivedDocs.length;
 
   return (
     <div style={{ padding: '24px', maxWidth: '960px', margin: '0 auto', color: 'var(--foreground)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h1 style={{ fontSize: '20px', fontWeight: 600, margin: 0 }}>Documents</h1>
-        <button onClick={handleReindex} disabled={reindexing} style={buttonStyle}>
-          {reindexing ? 'Indexing...' : 'Reindex'}
-        </button>
+        <h1 style={{ fontSize: '20px', fontWeight: 600, margin: 0 }}>
+          {showArchive ? 'Archived Documents' : 'Documents'}
+        </h1>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={() => setShowArchive(!showArchive)}
+            style={{
+              ...buttonStyle,
+              background: showArchive ? 'var(--accent)' : 'var(--card)',
+            }}
+          >
+            {showArchive ? 'Back to Active' : `Archive${archiveCount ? ` (${archiveCount})` : ''}`}
+          </button>
+          {!showArchive && (
+            <button onClick={handleReindex} disabled={reindexing} style={buttonStyle}>
+              {reindexing ? 'Indexing...' : 'Reindex'}
+            </button>
+          )}
+        </div>
       </div>
 
-      <input
-        type="text"
-        placeholder="Search documents..."
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        style={searchStyle}
-      />
+      {!showArchive && (
+        <input
+          type="text"
+          placeholder="Search documents..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          style={searchStyle}
+        />
+      )}
 
-      {loading && <p style={{ color: 'var(--muted-foreground)' }}>Loading...</p>}
+      {(loading || (showArchive && archiveLoading)) && <p style={{ color: 'var(--muted-foreground)' }}>Loading...</p>}
       {error && <p style={{ color: '#dc2626' }}>Error: {error.message}</p>}
 
-      {!loading && data && data.documents.length === 0 && (
+      {!loading && !showArchive && data && activeDocs.length === 0 && (
         <p style={{ color: 'var(--muted-foreground)', marginTop: '24px' }}>
           {data.lastIndexedAt
             ? 'No documents found. Try a different search.'
             : 'No documents indexed yet. Click "Reindex" to start.'}
+        </p>
+      )}
+
+      {showArchive && !archiveLoading && archivedDocs.length === 0 && (
+        <p style={{ color: 'var(--muted-foreground)', marginTop: '24px' }}>
+          No archived documents.
         </p>
       )}
 
@@ -121,13 +168,19 @@ export function DocumentsPage({ context }: PluginPageProps) {
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {docs.map((doc) => (
-              <DocRow key={`${doc.issueId}-${doc.documentKey}`} doc={doc} onClick={() => setSelectedDoc(doc)} />
+              <DocRow
+                key={`${doc.issueId}-${doc.documentKey}`}
+                doc={doc}
+                onClick={() => setSelectedDoc(doc)}
+                onAction={showArchive ? (e) => handleUnarchive(doc, e) : (e) => handleArchive(doc, e)}
+                actionLabel={showArchive ? 'Unarchive' : 'Archive'}
+              />
             ))}
           </div>
         </div>
       ))}
 
-      {data?.lastIndexedAt && (
+      {!showArchive && data?.lastIndexedAt && (
         <p style={{ marginTop: '24px', fontSize: '12px', color: 'var(--muted-foreground)' }}>
           Last indexed: {new Date(data.lastIndexedAt).toLocaleString()}
         </p>
@@ -136,7 +189,7 @@ export function DocumentsPage({ context }: PluginPageProps) {
   );
 }
 
-function DocRow({ doc, onClick }: { doc: DocumentEntry; onClick: () => void }) {
+function DocRow({ doc, onClick, onAction, actionLabel }: { doc: DocumentEntry; onClick: () => void; onAction: (e: React.MouseEvent) => void; actionLabel: string }) {
   const [hovered, setHovered] = useState(false);
   return (
     <div
@@ -159,6 +212,23 @@ function DocRow({ doc, onClick }: { doc: DocumentEntry; onClick: () => void }) {
         <span style={{ fontWeight: 500 }}>{doc.documentTitle}</span>
         <span style={{ color: 'var(--muted-foreground)', fontSize: '12px', marginLeft: '8px' }}>(from {doc.issueIdentifier})</span>
       </div>
+      <button
+        onClick={onAction}
+        style={{
+          padding: '3px 8px',
+          fontSize: '11px',
+          borderRadius: '4px',
+          border: '1px solid var(--border)',
+          background: 'var(--background)',
+          color: 'var(--muted-foreground)',
+          cursor: 'pointer',
+          marginRight: '10px',
+          opacity: hovered ? 1 : 0,
+          transition: 'opacity 0.15s',
+        }}
+      >
+        {actionLabel}
+      </button>
       <span style={{ fontSize: '12px', color: 'var(--muted-foreground)' }}>
         {new Date(doc.updatedAt).toLocaleDateString()}
       </span>

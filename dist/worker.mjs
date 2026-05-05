@@ -3,20 +3,42 @@ import { createRequire } from 'module'; const require = createRequire(import.met
 // src/worker.ts
 import { definePlugin, runWorker } from "@paperclipai/plugin-sdk";
 var INDEX_STATE_KEY = "document-index";
+var ARCHIVE_STATE_KEY = "archived-docs";
+function archiveKey(doc) {
+  return `${doc.issueId}:${doc.documentKey}`;
+}
 var plugin = definePlugin({
   async setup(ctx) {
+    async function getArchivedKeys() {
+      const stored = await ctx.state.get({ scopeKind: "instance", stateKey: ARCHIVE_STATE_KEY });
+      if (!stored) return /* @__PURE__ */ new Set();
+      return new Set(stored.keys);
+    }
     ctx.data.register("documents", async (params) => {
       const companyId = params?.companyId;
       if (!companyId) return { documents: [], lastIndexedAt: null };
       const stored = await ctx.state.get({ scopeKind: "instance", stateKey: INDEX_STATE_KEY });
       if (!stored) return { documents: [], lastIndexedAt: null };
       const index = stored;
+      const archived = await getArchivedKeys();
       const query = params?.query?.toLowerCase();
-      if (!query) return index;
-      const filtered = index.documents.filter(
-        (doc) => doc.documentTitle.toLowerCase().includes(query) || doc.issueTitle.toLowerCase().includes(query) || doc.issueIdentifier.toLowerCase().includes(query) || (doc.projectName?.toLowerCase().includes(query) ?? false)
-      );
-      return { documents: filtered, lastIndexedAt: index.lastIndexedAt };
+      let docs = index.documents.filter((doc) => !archived.has(archiveKey(doc)));
+      if (query) {
+        docs = docs.filter(
+          (doc) => doc.documentTitle.toLowerCase().includes(query) || doc.issueTitle.toLowerCase().includes(query) || doc.issueIdentifier.toLowerCase().includes(query) || (doc.projectName?.toLowerCase().includes(query) ?? false)
+        );
+      }
+      return { documents: docs, lastIndexedAt: index.lastIndexedAt };
+    });
+    ctx.data.register("archived-documents", async (params) => {
+      const companyId = params?.companyId;
+      if (!companyId) return { documents: [] };
+      const stored = await ctx.state.get({ scopeKind: "instance", stateKey: INDEX_STATE_KEY });
+      if (!stored) return { documents: [] };
+      const index = stored;
+      const archived = await getArchivedKeys();
+      const docs = index.documents.filter((doc) => archived.has(archiveKey(doc)));
+      return { documents: docs };
     });
     ctx.data.register("document-content", async (params) => {
       const companyId = params?.companyId;
@@ -69,6 +91,26 @@ var plugin = definePlugin({
       };
       await ctx.state.set({ scopeKind: "instance", stateKey: INDEX_STATE_KEY }, index);
       return { indexed: documents.length };
+    });
+    ctx.actions.register("archive", async (params) => {
+      const issueId = params?.issueId;
+      const documentKey = params?.documentKey;
+      if (!issueId || !documentKey) throw new Error("issueId and documentKey are required");
+      const archived = await getArchivedKeys();
+      const key = archiveKey({ issueId, documentKey });
+      archived.add(key);
+      await ctx.state.set({ scopeKind: "instance", stateKey: ARCHIVE_STATE_KEY }, { keys: [...archived] });
+      return { archived: true };
+    });
+    ctx.actions.register("unarchive", async (params) => {
+      const issueId = params?.issueId;
+      const documentKey = params?.documentKey;
+      if (!issueId || !documentKey) throw new Error("issueId and documentKey are required");
+      const archived = await getArchivedKeys();
+      const key = archiveKey({ issueId, documentKey });
+      archived.delete(key);
+      await ctx.state.set({ scopeKind: "instance", stateKey: ARCHIVE_STATE_KEY }, { keys: [...archived] });
+      return { unarchived: true };
     });
   },
   async onHealth() {
