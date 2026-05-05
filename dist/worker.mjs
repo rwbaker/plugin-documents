@@ -92,6 +92,25 @@ var plugin = definePlugin({
       await ctx.state.set({ scopeKind: "instance", stateKey: INDEX_STATE_KEY }, index);
       return { indexed: documents.length };
     });
+    ctx.actions.register("save-document", async (params) => {
+      const companyId = params?.companyId;
+      const issueId = params?.issueId;
+      const documentKey = params?.documentKey;
+      const body = params?.body;
+      const title = params?.title;
+      const format = params?.format;
+      if (!companyId || !issueId || !documentKey || body === void 0)
+        throw new Error("companyId, issueId, documentKey, and body are required");
+      await ctx.issues.documents.upsert({
+        issueId,
+        key: documentKey,
+        body,
+        companyId,
+        title,
+        format
+      });
+      return { saved: true };
+    });
     ctx.actions.register("archive", async (params) => {
       const issueId = params?.issueId;
       const documentKey = params?.documentKey;

@@ -255,22 +255,55 @@ function DocumentViewer({
   onBack: () => void;
   onArchive: () => void;
 }) {
-  const { data, loading, error } = usePluginData<DocumentContent | null>('document-content', {
+  const { data, loading, error, refresh } = usePluginData<DocumentContent | null>('document-content', {
     companyId,
     issueId: doc.issueId,
     documentKey: doc.documentKey,
   });
+  const saveAction = usePluginAction('save-document');
+  const [editing, setEditing] = useState(false);
+  const [editBody, setEditBody] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const renderedHtml = useMemo(() => {
     if (!data?.body) return '';
     return marked.parse(data.body, { async: false }) as string;
   }, [data?.body]);
 
+  function handleEdit() {
+    setEditBody(data?.body ?? '');
+    setEditing(true);
+  }
+
+  function handleCancelEdit() {
+    setEditing(false);
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await saveAction({
+        companyId,
+        issueId: doc.issueId,
+        documentKey: doc.documentKey,
+        body: editBody,
+        title: data?.title ?? doc.documentTitle,
+        format: data?.format,
+      });
+      setEditing(false);
+      refresh();
+    } finally {
+      setSaving(false);
+    }
+  }
+
   function handleDownload() {
-    if (!data?.body) return;
-    const ext = data.format === 'markdown' ? 'md' : data.format || 'txt';
-    const filename = `${data.title || doc.documentTitle}.${ext}`;
-    const blob = new Blob([data.body], { type: 'text/plain;charset=utf-8' });
+    const body = editing ? editBody : data?.body;
+    if (!body) return;
+    const format = data?.format || 'txt';
+    const ext = format === 'markdown' ? 'md' : format;
+    const filename = `${data?.title || doc.documentTitle}.${ext}`;
+    const blob = new Blob([body], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -281,11 +314,23 @@ function DocumentViewer({
 
   return (
     <div style={{ padding: '24px', color: 'var(--foreground)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
         <button onClick={onBack} style={buttonStyle}>&larr; Back</button>
         <h1 style={{ fontSize: '20px', fontWeight: 600, margin: 0, flex: 1 }}>{data?.title ?? doc.documentTitle}</h1>
-        <button onClick={handleDownload} disabled={!data?.body} style={buttonStyle}>Download</button>
-        <button onClick={onArchive} style={buttonStyle}>Archive</button>
+        {editing ? (
+          <>
+            <button onClick={handleSave} disabled={saving} style={{ ...buttonStyle, background: 'var(--accent)', color: 'var(--accent-foreground)' }}>
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+            <button onClick={handleCancelEdit} style={buttonStyle}>Cancel</button>
+          </>
+        ) : (
+          <>
+            <button onClick={handleEdit} disabled={!data?.body} style={buttonStyle}>Edit</button>
+            <button onClick={handleDownload} disabled={!data?.body} style={buttonStyle}>Download</button>
+            <button onClick={onArchive} style={buttonStyle}>Archive</button>
+          </>
+        )}
       </div>
 
       <div style={{ fontSize: '13px', color: 'var(--muted-foreground)', marginBottom: '16px' }}>
@@ -296,7 +341,28 @@ function DocumentViewer({
       {loading && <p style={{ color: 'var(--muted-foreground)' }}>Loading document...</p>}
       {error && <p style={{ color: '#dc2626' }}>Error loading document: {error.message}</p>}
 
-      {data && (
+      {data && editing && (
+        <textarea
+          value={editBody}
+          onChange={(e) => setEditBody(e.target.value)}
+          style={{
+            width: '100%',
+            minHeight: '500px',
+            padding: '16px',
+            fontSize: '14px',
+            fontFamily: 'monospace',
+            lineHeight: '1.6',
+            borderRadius: '8px',
+            border: '1px solid var(--border)',
+            background: 'var(--card)',
+            color: 'var(--card-foreground)',
+            resize: 'vertical',
+            outline: 'none',
+          }}
+        />
+      )}
+
+      {data && !editing && (
         <>
           <style dangerouslySetInnerHTML={{ __html: markdownStyles }} />
           <div

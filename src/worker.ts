@@ -138,6 +138,27 @@ const plugin = definePlugin({
       return { indexed: documents.length };
     });
 
+    ctx.actions.register('save-document', async (params) => {
+      const companyId = params?.companyId as string | undefined;
+      const issueId = params?.issueId as string | undefined;
+      const documentKey = params?.documentKey as string | undefined;
+      const body = params?.body as string | undefined;
+      const title = params?.title as string | undefined;
+      const format = params?.format as string | undefined;
+      if (!companyId || !issueId || !documentKey || body === undefined)
+        throw new Error('companyId, issueId, documentKey, and body are required');
+
+      await ctx.issues.documents.upsert({
+        issueId,
+        key: documentKey,
+        body,
+        companyId,
+        title,
+        format,
+      });
+      return { saved: true };
+    });
+
     ctx.actions.register('archive', async (params) => {
       const issueId = params?.issueId as string | undefined;
       const documentKey = params?.documentKey as string | undefined;

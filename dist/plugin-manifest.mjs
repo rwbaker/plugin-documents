@@ -10,6 +10,7 @@ var manifest = {
   capabilities: [
     "issues.read",
     "issue.documents.read",
+    "issue.documents.write",
     "projects.read",
     "plugin.state.read",
     "plugin.state.write",

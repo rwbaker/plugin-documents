@@ -1431,20 +1431,50 @@ function DocumentViewer({
   onBack,
   onArchive
 }) {
-  const { data, loading, error } = usePluginData("document-content", {
+  const { data, loading, error, refresh } = usePluginData("document-content", {
     companyId,
     issueId: doc.issueId,
     documentKey: doc.documentKey
   });
+  const saveAction = usePluginAction("save-document");
+  const [editing, setEditing] = useState(false);
+  const [editBody, setEditBody] = useState("");
+  const [saving, setSaving] = useState(false);
   const renderedHtml = useMemo(() => {
     if (!data?.body) return "";
     return g.parse(data.body, { async: false });
   }, [data?.body]);
+  function handleEdit() {
+    setEditBody(data?.body ?? "");
+    setEditing(true);
+  }
+  function handleCancelEdit() {
+    setEditing(false);
+  }
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await saveAction({
+        companyId,
+        issueId: doc.issueId,
+        documentKey: doc.documentKey,
+        body: editBody,
+        title: data?.title ?? doc.documentTitle,
+        format: data?.format
+      });
+      setEditing(false);
+      refresh();
+    } finally {
+      setSaving(false);
+    }
+  }
   function handleDownload() {
-    if (!data?.body) return;
-    const ext = data.format === "markdown" ? "md" : data.format || "txt";
-    const filename = `${data.title || doc.documentTitle}.${ext}`;
-    const blob = new Blob([data.body], { type: "text/plain;charset=utf-8" });
+    const body = editing ? editBody : data?.body;
+    if (!body) return;
+    const format = data?.format || "txt";
+    const ext = format === "markdown" ? "md" : format;
+    const filename = `${data?.title || doc.documentTitle}.${ext}`;
+    const blob = new Blob([body], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -1453,11 +1483,17 @@ function DocumentViewer({
     URL.revokeObjectURL(url);
   }
   return /* @__PURE__ */ jsxs("div", { style: { padding: "24px", color: "var(--foreground)" }, children: [
-    /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }, children: [
+    /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: "8px", marginBottom: "24px" }, children: [
       /* @__PURE__ */ jsx("button", { onClick: onBack, style: buttonStyle, children: "\u2190 Back" }),
       /* @__PURE__ */ jsx("h1", { style: { fontSize: "20px", fontWeight: 600, margin: 0, flex: 1 }, children: data?.title ?? doc.documentTitle }),
-      /* @__PURE__ */ jsx("button", { onClick: handleDownload, disabled: !data?.body, style: buttonStyle, children: "Download" }),
-      /* @__PURE__ */ jsx("button", { onClick: onArchive, style: buttonStyle, children: "Archive" })
+      editing ? /* @__PURE__ */ jsxs(Fragment, { children: [
+        /* @__PURE__ */ jsx("button", { onClick: handleSave, disabled: saving, style: { ...buttonStyle, background: "var(--accent)", color: "var(--accent-foreground)" }, children: saving ? "Saving..." : "Save" }),
+        /* @__PURE__ */ jsx("button", { onClick: handleCancelEdit, style: buttonStyle, children: "Cancel" })
+      ] }) : /* @__PURE__ */ jsxs(Fragment, { children: [
+        /* @__PURE__ */ jsx("button", { onClick: handleEdit, disabled: !data?.body, style: buttonStyle, children: "Edit" }),
+        /* @__PURE__ */ jsx("button", { onClick: handleDownload, disabled: !data?.body, style: buttonStyle, children: "Download" }),
+        /* @__PURE__ */ jsx("button", { onClick: onArchive, style: buttonStyle, children: "Archive" })
+      ] })
     ] }),
     /* @__PURE__ */ jsxs("div", { style: { fontSize: "13px", color: "var(--muted-foreground)", marginBottom: "16px" }, children: [
       "From ",
@@ -1472,7 +1508,28 @@ function DocumentViewer({
       "Error loading document: ",
       error.message
     ] }),
-    data && /* @__PURE__ */ jsxs(Fragment, { children: [
+    data && editing && /* @__PURE__ */ jsx(
+      "textarea",
+      {
+        value: editBody,
+        onChange: (e) => setEditBody(e.target.value),
+        style: {
+          width: "100%",
+          minHeight: "500px",
+          padding: "16px",
+          fontSize: "14px",
+          fontFamily: "monospace",
+          lineHeight: "1.6",
+          borderRadius: "8px",
+          border: "1px solid var(--border)",
+          background: "var(--card)",
+          color: "var(--card-foreground)",
+          resize: "vertical",
+          outline: "none"
+        }
+      }
+    ),
+    data && !editing && /* @__PURE__ */ jsxs(Fragment, { children: [
       /* @__PURE__ */ jsx("style", { dangerouslySetInnerHTML: { __html: markdownStyles } }),
       /* @__PURE__ */ jsx(
         "div",
