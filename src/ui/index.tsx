@@ -101,6 +101,12 @@ export function DocumentsPage({ context }: PluginPageProps) {
         companyId={context.companyId!}
         companyPrefix={context.companyPrefix ?? ''}
         onBack={() => setSelectedDoc(null)}
+        onArchive={async () => {
+          await archiveAction({ issueId: selectedDoc.issueId, documentKey: selectedDoc.documentKey });
+          setSelectedDoc(null);
+          refresh();
+          refreshArchive();
+        }}
       />
     );
   }
@@ -241,11 +247,13 @@ function DocumentViewer({
   companyId,
   companyPrefix,
   onBack,
+  onArchive,
 }: {
   doc: DocumentEntry;
   companyId: string;
   companyPrefix: string;
   onBack: () => void;
+  onArchive: () => void;
 }) {
   const { data, loading, error } = usePluginData<DocumentContent | null>('document-content', {
     companyId,
@@ -258,11 +266,26 @@ function DocumentViewer({
     return marked.parse(data.body, { async: false }) as string;
   }, [data?.body]);
 
+  function handleDownload() {
+    if (!data?.body) return;
+    const ext = data.format === 'markdown' ? 'md' : data.format || 'txt';
+    const filename = `${data.title || doc.documentTitle}.${ext}`;
+    const blob = new Blob([data.body], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div style={{ padding: '24px', color: 'var(--foreground)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
         <button onClick={onBack} style={buttonStyle}>&larr; Back</button>
-        <h1 style={{ fontSize: '20px', fontWeight: 600, margin: 0 }}>{data?.title ?? doc.documentTitle}</h1>
+        <h1 style={{ fontSize: '20px', fontWeight: 600, margin: 0, flex: 1 }}>{data?.title ?? doc.documentTitle}</h1>
+        <button onClick={handleDownload} disabled={!data?.body} style={buttonStyle}>Download</button>
+        <button onClick={onArchive} style={buttonStyle}>Archive</button>
       </div>
 
       <div style={{ fontSize: '13px', color: 'var(--muted-foreground)', marginBottom: '16px' }}>

@@ -1304,7 +1304,13 @@ function DocumentsPage({ context }) {
         doc: selectedDoc,
         companyId: context.companyId,
         companyPrefix: context.companyPrefix ?? "",
-        onBack: () => setSelectedDoc(null)
+        onBack: () => setSelectedDoc(null),
+        onArchive: async () => {
+          await archiveAction({ issueId: selectedDoc.issueId, documentKey: selectedDoc.documentKey });
+          setSelectedDoc(null);
+          refresh();
+          refreshArchive();
+        }
       }
     );
   }
@@ -1422,7 +1428,8 @@ function DocumentViewer({
   doc,
   companyId,
   companyPrefix,
-  onBack
+  onBack,
+  onArchive
 }) {
   const { data, loading, error } = usePluginData("document-content", {
     companyId,
@@ -1433,10 +1440,24 @@ function DocumentViewer({
     if (!data?.body) return "";
     return g.parse(data.body, { async: false });
   }, [data?.body]);
+  function handleDownload() {
+    if (!data?.body) return;
+    const ext = data.format === "markdown" ? "md" : data.format || "txt";
+    const filename = `${data.title || doc.documentTitle}.${ext}`;
+    const blob = new Blob([data.body], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
   return /* @__PURE__ */ jsxs("div", { style: { padding: "24px", color: "var(--foreground)" }, children: [
     /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }, children: [
       /* @__PURE__ */ jsx("button", { onClick: onBack, style: buttonStyle, children: "\u2190 Back" }),
-      /* @__PURE__ */ jsx("h1", { style: { fontSize: "20px", fontWeight: 600, margin: 0 }, children: data?.title ?? doc.documentTitle })
+      /* @__PURE__ */ jsx("h1", { style: { fontSize: "20px", fontWeight: 600, margin: 0, flex: 1 }, children: data?.title ?? doc.documentTitle }),
+      /* @__PURE__ */ jsx("button", { onClick: handleDownload, disabled: !data?.body, style: buttonStyle, children: "Download" }),
+      /* @__PURE__ */ jsx("button", { onClick: onArchive, style: buttonStyle, children: "Archive" })
     ] }),
     /* @__PURE__ */ jsxs("div", { style: { fontSize: "13px", color: "var(--muted-foreground)", marginBottom: "16px" }, children: [
       "From ",
