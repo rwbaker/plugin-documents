@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/worker.mjs",
   "paperclipPlugin": {
-    "manifest": "dist/manifest.mjs"
+    "manifest": "dist/plugin-manifest.mjs"
   },
   "scripts": {
     "build": "node build.mjs",
