@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { usePluginData, usePluginAction } from '@paperclipai/plugin-sdk/ui';
 import type { PluginPageProps, PluginSidebarProps } from '@paperclipai/plugin-sdk/ui';
+import { marked } from 'marked';
 
 interface DocumentEntry {
   issueId: string;
@@ -176,6 +177,11 @@ function DocumentViewer({
     documentKey: doc.documentKey,
   });
 
+  const renderedHtml = useMemo(() => {
+    if (!data?.body) return '';
+    return marked.parse(data.body, { async: false }) as string;
+  }, [data?.body]);
+
   return (
     <div style={{ padding: '24px', maxWidth: '960px', margin: '0 auto', color: 'var(--foreground)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
@@ -192,17 +198,17 @@ function DocumentViewer({
       {error && <p style={{ color: '#dc2626' }}>Error loading document: {error.message}</p>}
 
       {data && (
-        <div style={{
-          padding: '20px',
-          borderRadius: '8px',
-          border: '1px solid var(--border)',
-          background: 'var(--card)',
-          color: 'var(--card-foreground)',
-        }}>
-          <pre style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', margin: 0, fontFamily: 'inherit', fontSize: '14px', lineHeight: '1.6' }}>
-            {data.body}
-          </pre>
-        </div>
+        <div
+          className="prose prose-sm dark:prose-invert max-w-none"
+          style={{
+            padding: '20px',
+            borderRadius: '8px',
+            border: '1px solid var(--border)',
+            background: 'var(--card)',
+            color: 'var(--card-foreground)',
+          }}
+          dangerouslySetInnerHTML={{ __html: renderedHtml }}
+        />
       )}
     </div>
   );

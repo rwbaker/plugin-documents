@@ -15,7 +15,8 @@
     "dev": "paperclip-plugin-dev-server --root . --ui-dir dist/ui --port 4178"
   },
   "dependencies": {
-    "@paperclipai/plugin-sdk": ">=2026.416.0"
+    "@paperclipai/plugin-sdk": ">=2026.416.0",
+    "marked": "^18.0.3"
   },
   "devDependencies": {
     "@types/react": "^19.2.14",
