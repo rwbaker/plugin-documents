@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { usePluginData, usePluginAction } from '@paperclipai/plugin-sdk/ui';
-import type { PluginPageProps, PluginSidebarProps } from '@paperclipai/plugin-sdk/ui';
+import type { PluginPageProps, PluginSidebarProps, PluginDetailTabProps } from '@paperclipai/plugin-sdk/ui';
 import { marked } from 'marked';
 
 interface DocumentEntry {
@@ -50,6 +50,57 @@ export function DocumentsSidebarLink({ context }: PluginSidebarProps) {
       </span>
       <span className="flex-1 truncate">Documents</span>
     </a>
+  );
+}
+
+interface IssueDocEntry {
+  key: string;
+  title: string;
+  format: string;
+  updatedAt: string;
+}
+
+export function IssueDocumentsTab({ context }: PluginDetailTabProps) {
+  const prefix = context.companyPrefix ?? '';
+  const issueId = context.entityId;
+  const { data, loading } = usePluginData<{ documents: IssueDocEntry[] }>('issue-documents', {
+    companyId: context.companyId,
+    issueId,
+  });
+
+  if (loading) return <p style={{ padding: '16px', color: 'var(--muted-foreground)', fontSize: '13px' }}>Loading...</p>;
+
+  const docs = data?.documents ?? [];
+  if (docs.length === 0) {
+    return <p style={{ padding: '16px', color: 'var(--muted-foreground)', fontSize: '13px' }}>No documents on this issue.</p>;
+  }
+
+  return (
+    <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      {docs.map((doc) => (
+        <a
+          key={doc.key}
+          href={`/${prefix}/documents?doc=${issueId}:${doc.key}`}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '8px 12px',
+            borderRadius: '6px',
+            border: '1px solid var(--border)',
+            background: 'var(--card)',
+            color: 'var(--card-foreground)',
+            textDecoration: 'none',
+            fontSize: '13px',
+            transition: 'background 0.15s',
+          }}
+        >
+          <span style={{ flex: 1, fontWeight: 500 }}>{doc.title}</span>
+          <span style={{ fontSize: '11px', color: 'var(--muted-foreground)' }}>
+            View in Documents &rarr;
+          </span>
+        </a>
+      ))}
+    </div>
   );
 }
 

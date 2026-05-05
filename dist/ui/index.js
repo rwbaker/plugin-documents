@@ -1260,6 +1260,42 @@ function DocumentsSidebarLink({ context }) {
     }
   );
 }
+function IssueDocumentsTab({ context }) {
+  const prefix = context.companyPrefix ?? "";
+  const issueId = context.entityId;
+  const { data, loading } = usePluginData("issue-documents", {
+    companyId: context.companyId,
+    issueId
+  });
+  if (loading) return /* @__PURE__ */ jsx("p", { style: { padding: "16px", color: "var(--muted-foreground)", fontSize: "13px" }, children: "Loading..." });
+  const docs = data?.documents ?? [];
+  if (docs.length === 0) {
+    return /* @__PURE__ */ jsx("p", { style: { padding: "16px", color: "var(--muted-foreground)", fontSize: "13px" }, children: "No documents on this issue." });
+  }
+  return /* @__PURE__ */ jsx("div", { style: { padding: "16px", display: "flex", flexDirection: "column", gap: "6px" }, children: docs.map((doc) => /* @__PURE__ */ jsxs(
+    "a",
+    {
+      href: `/${prefix}/documents?doc=${issueId}:${doc.key}`,
+      style: {
+        display: "flex",
+        alignItems: "center",
+        padding: "8px 12px",
+        borderRadius: "6px",
+        border: "1px solid var(--border)",
+        background: "var(--card)",
+        color: "var(--card-foreground)",
+        textDecoration: "none",
+        fontSize: "13px",
+        transition: "background 0.15s"
+      },
+      children: [
+        /* @__PURE__ */ jsx("span", { style: { flex: 1, fontWeight: 500 }, children: doc.title }),
+        /* @__PURE__ */ jsx("span", { style: { fontSize: "11px", color: "var(--muted-foreground)" }, children: "View in Documents \u2192" })
+      ]
+    },
+    doc.key
+  )) });
+}
 function DocumentsPage({ context }) {
   const [query, setQuery] = useState("");
   const [selectedDoc, setSelectedDoc] = useState(null);
@@ -1602,6 +1638,7 @@ var markdownStyles = `
 `;
 export {
   DocumentsPage,
-  DocumentsSidebarLink
+  DocumentsSidebarLink,
+  IssueDocumentsTab
 };
 //# sourceMappingURL=index.js.map

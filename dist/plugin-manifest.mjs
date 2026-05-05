@@ -35,6 +35,13 @@ var manifest = {
         id: "documents-nav",
         displayName: "Documents",
         exportName: "DocumentsSidebarLink"
+      },
+      {
+        type: "detailTab",
+        id: "issue-documents-tab",
+        displayName: "Documents",
+        exportName: "IssueDocumentsTab",
+        entityTypes: ["issue"]
       }
     ]
   }

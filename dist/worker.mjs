@@ -49,6 +49,24 @@ var plugin = definePlugin({
       if (!doc) return null;
       return { title: doc.title ?? doc.key, body: doc.body, format: doc.format };
     });
+    ctx.data.register("issue-documents", async (params) => {
+      const companyId = params?.companyId;
+      const issueId = params?.issueId;
+      if (!companyId || !issueId) return { documents: [] };
+      try {
+        const docs = await ctx.issues.documents.list(issueId, companyId);
+        return {
+          documents: docs.map((doc) => ({
+            key: doc.key,
+            title: doc.title ?? doc.key,
+            format: doc.format,
+            updatedAt: String(doc.updatedAt)
+          }))
+        };
+      } catch {
+        return { documents: [] };
+      }
+    });
     ctx.data.register("health", async () => {
       const stored = await ctx.state.get({ scopeKind: "instance", stateKey: INDEX_STATE_KEY });
       const index = stored;
