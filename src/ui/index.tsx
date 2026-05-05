@@ -183,7 +183,7 @@ function DocumentViewer({
   }, [data?.body]);
 
   return (
-    <div style={{ padding: '24px', maxWidth: '960px', margin: '0 auto', color: 'var(--foreground)' }}>
+    <div style={{ padding: '24px', color: 'var(--foreground)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
         <button onClick={onBack} style={buttonStyle}>&larr; Back</button>
         <h1 style={{ fontSize: '20px', fontWeight: 600, margin: 0 }}>{data?.title ?? doc.documentTitle}</h1>
@@ -198,17 +198,20 @@ function DocumentViewer({
       {error && <p style={{ color: '#dc2626' }}>Error loading document: {error.message}</p>}
 
       {data && (
-        <div
-          className="prose prose-sm dark:prose-invert max-w-none"
-          style={{
-            padding: '20px',
-            borderRadius: '8px',
-            border: '1px solid var(--border)',
-            background: 'var(--card)',
-            color: 'var(--card-foreground)',
-          }}
-          dangerouslySetInnerHTML={{ __html: renderedHtml }}
-        />
+        <>
+          <style dangerouslySetInnerHTML={{ __html: markdownStyles }} />
+          <div
+            className="plugin-doc-content"
+            style={{
+              padding: '24px',
+              borderRadius: '8px',
+              border: '1px solid var(--border)',
+              background: 'var(--card)',
+              color: 'var(--card-foreground)',
+            }}
+            dangerouslySetInnerHTML={{ __html: renderedHtml }}
+          />
+        </>
       )}
     </div>
   );
@@ -244,3 +247,28 @@ const searchStyle: React.CSSProperties = {
   color: 'var(--foreground)',
   outline: 'none',
 };
+
+const markdownStyles = `
+.plugin-doc-content { font-size: 14px; line-height: 1.7; }
+.plugin-doc-content h1,
+.plugin-doc-content h2,
+.plugin-doc-content h3,
+.plugin-doc-content h4,
+.plugin-doc-content h5,
+.plugin-doc-content h6 { color: var(--foreground); font-weight: 600; margin-top: 1.5em; margin-bottom: 0.5em; }
+.plugin-doc-content h1 { font-size: 1.5em; }
+.plugin-doc-content h2 { font-size: 1.3em; }
+.plugin-doc-content h3 { font-size: 1.1em; }
+.plugin-doc-content p { margin: 0.75em 0; }
+.plugin-doc-content ul, .plugin-doc-content ol { padding-left: 1.5em; margin: 0.75em 0; }
+.plugin-doc-content li { margin: 0.25em 0; }
+.plugin-doc-content code { background: var(--muted); padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.9em; }
+.plugin-doc-content pre { background: var(--muted); padding: 12px 16px; border-radius: 6px; overflow-x: auto; margin: 1em 0; }
+.plugin-doc-content pre code { background: none; padding: 0; }
+.plugin-doc-content blockquote { border-left: 3px solid var(--border); padding-left: 1em; margin: 1em 0; color: var(--muted-foreground); }
+.plugin-doc-content a { color: var(--accent-foreground); text-decoration: underline; }
+.plugin-doc-content hr { border: none; border-top: 1px solid var(--border); margin: 1.5em 0; }
+.plugin-doc-content table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+.plugin-doc-content th, .plugin-doc-content td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; }
+.plugin-doc-content th { background: var(--muted); font-weight: 600; }
+`;

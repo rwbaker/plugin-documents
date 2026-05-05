@@ -1235,7 +1235,7 @@ var Jt = b.parse;
 var Vt = x.lex;
 
 // src/ui/index.tsx
-import { jsx, jsxs } from "react/jsx-runtime";
+import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 function DocumentsSidebarLink({ context }) {
   const prefix = context.companyPrefix ?? "";
   return /* @__PURE__ */ jsxs(
@@ -1359,7 +1359,7 @@ function DocumentViewer({
     if (!data?.body) return "";
     return g.parse(data.body, { async: false });
   }, [data?.body]);
-  return /* @__PURE__ */ jsxs("div", { style: { padding: "24px", maxWidth: "960px", margin: "0 auto", color: "var(--foreground)" }, children: [
+  return /* @__PURE__ */ jsxs("div", { style: { padding: "24px", color: "var(--foreground)" }, children: [
     /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }, children: [
       /* @__PURE__ */ jsx("button", { onClick: onBack, style: buttonStyle, children: "\u2190 Back" }),
       /* @__PURE__ */ jsx("h1", { style: { fontSize: "20px", fontWeight: 600, margin: 0 }, children: data?.title ?? doc.documentTitle })
@@ -1377,20 +1377,23 @@ function DocumentViewer({
       "Error loading document: ",
       error.message
     ] }),
-    data && /* @__PURE__ */ jsx(
-      "div",
-      {
-        className: "prose prose-sm dark:prose-invert max-w-none",
-        style: {
-          padding: "20px",
-          borderRadius: "8px",
-          border: "1px solid var(--border)",
-          background: "var(--card)",
-          color: "var(--card-foreground)"
-        },
-        dangerouslySetInnerHTML: { __html: renderedHtml }
-      }
-    )
+    data && /* @__PURE__ */ jsxs(Fragment, { children: [
+      /* @__PURE__ */ jsx("style", { dangerouslySetInnerHTML: { __html: markdownStyles } }),
+      /* @__PURE__ */ jsx(
+        "div",
+        {
+          className: "plugin-doc-content",
+          style: {
+            padding: "24px",
+            borderRadius: "8px",
+            border: "1px solid var(--border)",
+            background: "var(--card)",
+            color: "var(--card-foreground)"
+          },
+          dangerouslySetInnerHTML: { __html: renderedHtml }
+        }
+      )
+    ] })
   ] });
 }
 function groupByProject(docs) {
@@ -1421,6 +1424,30 @@ var searchStyle = {
   color: "var(--foreground)",
   outline: "none"
 };
+var markdownStyles = `
+.plugin-doc-content { font-size: 14px; line-height: 1.7; }
+.plugin-doc-content h1,
+.plugin-doc-content h2,
+.plugin-doc-content h3,
+.plugin-doc-content h4,
+.plugin-doc-content h5,
+.plugin-doc-content h6 { color: var(--foreground); font-weight: 600; margin-top: 1.5em; margin-bottom: 0.5em; }
+.plugin-doc-content h1 { font-size: 1.5em; }
+.plugin-doc-content h2 { font-size: 1.3em; }
+.plugin-doc-content h3 { font-size: 1.1em; }
+.plugin-doc-content p { margin: 0.75em 0; }
+.plugin-doc-content ul, .plugin-doc-content ol { padding-left: 1.5em; margin: 0.75em 0; }
+.plugin-doc-content li { margin: 0.25em 0; }
+.plugin-doc-content code { background: var(--muted); padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.9em; }
+.plugin-doc-content pre { background: var(--muted); padding: 12px 16px; border-radius: 6px; overflow-x: auto; margin: 1em 0; }
+.plugin-doc-content pre code { background: none; padding: 0; }
+.plugin-doc-content blockquote { border-left: 3px solid var(--border); padding-left: 1em; margin: 1em 0; color: var(--muted-foreground); }
+.plugin-doc-content a { color: var(--accent-foreground); text-decoration: underline; }
+.plugin-doc-content hr { border: none; border-top: 1px solid var(--border); margin: 1.5em 0; }
+.plugin-doc-content table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+.plugin-doc-content th, .plugin-doc-content td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; }
+.plugin-doc-content th { background: var(--muted); font-weight: 600; }
+`;
 export {
   DocumentsPage,
   DocumentsSidebarLink
