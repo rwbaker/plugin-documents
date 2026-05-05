@@ -25,47 +25,24 @@ interface DocumentContent {
   format: string;
 }
 
-function FileTextIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-      <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-      <path d="M10 9H8" />
-      <path d="M16 13H8" />
-      <path d="M16 17H8" />
-    </svg>
-  );
-}
-
 export function DocumentsSidebarLink({ context }: PluginSidebarProps) {
   const prefix = context.companyPrefix ?? '';
-  const [hovered, setHovered] = useState(false);
-  const isActive = typeof window !== 'undefined' && window.location.pathname === `/${prefix}/documents`;
-
   return (
     <a
+      className="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium transition-colors text-foreground/80 hover:bg-accent/50 hover:text-foreground"
       href={`/${prefix}/documents`}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        color: 'var(--foreground)',
-        textDecoration: 'none',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '6px 8px',
-        borderRadius: '6px',
-        background: isActive
-          ? 'var(--accent)'
-          : hovered
-            ? 'var(--accent)'
-            : 'transparent',
-        opacity: isActive ? 1 : hovered ? 0.8 : 0.7,
-        transition: 'background 0.15s, opacity 0.15s',
-      }}
+      data-discover="true"
     >
-      <FileTextIcon />
-      Documents
+      <span className="relative shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-file-text h-4 w-4" aria-hidden="true">
+          <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+          <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+          <path d="M10 9H8" />
+          <path d="M16 13H8" />
+          <path d="M16 17H8" />
+        </svg>
+      </span>
+      <span className="flex-1 truncate">Documents</span>
     </a>
   );
 }
