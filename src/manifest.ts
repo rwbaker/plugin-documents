@@ -5,7 +5,7 @@ const manifest = {
   displayName: 'Documents',
   description: 'Browse all issue documents across the company, grouped by project with search',
   author: 'SGNL Studio',
-  categories: ['productivity'] as const,
+  categories: ['ui'] as const,
 
   capabilities: [
     'issues.read',
@@ -28,7 +28,7 @@ const manifest = {
         id: 'documents-page',
         displayName: 'Documents',
         exportName: 'DocumentsPage',
-        routePath: '/documents',
+        routePath: 'documents',
       },
     ],
   },

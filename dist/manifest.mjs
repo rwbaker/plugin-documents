@@ -8,7 +8,7 @@ var manifest = {
   displayName: "Documents",
   description: "Browse all issue documents across the company, grouped by project with search",
   author: "SGNL Studio",
-  categories: ["productivity"],
+  categories: ["ui"],
   capabilities: [
     "issues.read",
     "issue.documents.read",
@@ -28,7 +28,7 @@ var manifest = {
         id: "documents-page",
         displayName: "Documents",
         exportName: "DocumentsPage",
-        routePath: "/documents"
+        routePath: "documents"
       }
     ]
   }
