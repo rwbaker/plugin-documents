@@ -157,6 +157,7 @@ function DocRow({ doc, onClick }: { doc: DocumentEntry; onClick: () => void }) {
     >
       <div style={{ flex: 1 }}>
         <span style={{ fontWeight: 500 }}>{doc.documentTitle}</span>
+        <span style={{ color: 'var(--muted-foreground)', fontSize: '12px', marginLeft: '8px' }}>(from {doc.issueIdentifier})</span>
       </div>
       <span style={{ fontSize: '12px', color: 'var(--muted-foreground)' }}>
         {new Date(doc.updatedAt).toLocaleDateString()}

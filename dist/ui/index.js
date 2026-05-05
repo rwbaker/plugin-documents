@@ -1341,7 +1341,14 @@ function DocRow({ doc, onClick }) {
         transition: "background 0.15s"
       },
       children: [
-        /* @__PURE__ */ jsx("div", { style: { flex: 1 }, children: /* @__PURE__ */ jsx("span", { style: { fontWeight: 500 }, children: doc.documentTitle }) }),
+        /* @__PURE__ */ jsxs("div", { style: { flex: 1 }, children: [
+          /* @__PURE__ */ jsx("span", { style: { fontWeight: 500 }, children: doc.documentTitle }),
+          /* @__PURE__ */ jsxs("span", { style: { color: "var(--muted-foreground)", fontSize: "12px", marginLeft: "8px" }, children: [
+            "(from ",
+            doc.issueIdentifier,
+            ")"
+          ] })
+        ] }),
         /* @__PURE__ */ jsx("span", { style: { fontSize: "12px", color: "var(--muted-foreground)" }, children: new Date(doc.updatedAt).toLocaleDateString() })
       ]
     }
