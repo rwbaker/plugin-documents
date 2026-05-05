@@ -1,5 +1,5 @@
 {
-  "name": "@memorie/plugin-documents",
+  "name": "plugin-documents",
   "version": "0.1.0",
   "description": "Paperclip plugin for browsing all issue documents across the company",
   "type": "module",
