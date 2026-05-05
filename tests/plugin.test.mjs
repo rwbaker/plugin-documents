@@ -7,7 +7,7 @@ describe('plugin-documents', () => {
   let plugin;
 
   before(async () => {
-    const manifest = (await import('../dist/manifest.mjs')).default;
+    const manifest = (await import('../dist/plugin-manifest.mjs')).default;
     plugin = (await import('../dist/worker.mjs')).default;
     harness = createTestHarness({ manifest });
     await plugin.definition.setup(harness.ctx);

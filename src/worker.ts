@@ -44,6 +44,17 @@ const plugin = definePlugin({
       return { documents: filtered, lastIndexedAt: index.lastIndexedAt };
     });
 
+    ctx.data.register('document-content', async (params) => {
+      const companyId = params?.companyId as string | undefined;
+      const issueId = params?.issueId as string | undefined;
+      const documentKey = params?.documentKey as string | undefined;
+      if (!companyId || !issueId || !documentKey) return null;
+
+      const doc = await ctx.issues.documents.get(issueId, documentKey, companyId);
+      if (!doc) return null;
+      return { title: doc.title ?? doc.key, body: doc.body, format: doc.format };
+    });
+
     ctx.data.register('health', async () => {
       const stored = await ctx.state.get({ scopeKind: 'instance', stateKey: INDEX_STATE_KEY });
       const index = stored as DocumentIndex | null;

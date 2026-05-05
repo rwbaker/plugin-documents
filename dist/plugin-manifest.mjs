@@ -2,7 +2,7 @@
 var manifest = {
   id: "documents",
   apiVersion: 1,
-  version: "0.1.0",
+  version: "0.2.0",
   displayName: "Documents",
   description: "Browse all issue documents across the company, grouped by project with search",
   author: "SGNL Studio",
@@ -13,7 +13,8 @@ var manifest = {
     "projects.read",
     "plugin.state.read",
     "plugin.state.write",
-    "ui.page.register"
+    "ui.page.register",
+    "ui.sidebar.register"
   ],
   entrypoints: {
     worker: "dist/worker.mjs",
@@ -27,6 +28,12 @@ var manifest = {
         displayName: "Documents",
         exportName: "DocumentsPage",
         routePath: "documents"
+      },
+      {
+        type: "sidebar",
+        id: "documents-nav",
+        displayName: "Documents",
+        exportName: "DocumentsSidebarLink"
       }
     ]
   }

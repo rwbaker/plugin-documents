@@ -1,7 +1,7 @@
 const manifest = {
   id: 'documents',
   apiVersion: 1 as const,
-  version: '0.1.0',
+  version: '0.2.0',
   displayName: 'Documents',
   description: 'Browse all issue documents across the company, grouped by project with search',
   author: 'SGNL Studio',
@@ -14,6 +14,7 @@ const manifest = {
     'plugin.state.read',
     'plugin.state.write',
     'ui.page.register',
+    'ui.sidebar.register',
   ] as const,
 
   entrypoints: {
@@ -29,6 +30,12 @@ const manifest = {
         displayName: 'Documents',
         exportName: 'DocumentsPage',
         routePath: 'documents',
+      },
+      {
+        type: 'sidebar',
+        id: 'documents-nav',
+        displayName: 'Documents',
+        exportName: 'DocumentsSidebarLink',
       },
     ],
   },

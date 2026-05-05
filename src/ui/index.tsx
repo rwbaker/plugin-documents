@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { usePluginData, usePluginAction } from '@paperclipai/plugin-sdk/ui';
-import type { PluginPageProps } from '@paperclipai/plugin-sdk/ui';
+import type { PluginPageProps, PluginSidebarProps } from '@paperclipai/plugin-sdk/ui';
 
 interface DocumentEntry {
   issueId: string;
@@ -19,8 +19,27 @@ interface DocumentsData {
   lastIndexedAt: string | null;
 }
 
+interface DocumentContent {
+  title: string;
+  body: string;
+  format: string;
+}
+
+export function DocumentsSidebarLink({ context }: PluginSidebarProps) {
+  const prefix = context.companyPrefix ?? '';
+  return (
+    <a
+      href={`/${prefix}/documents`}
+      style={{ color: 'inherit', textDecoration: 'none', display: 'block', padding: '4px 0' }}
+    >
+      Documents
+    </a>
+  );
+}
+
 export function DocumentsPage({ context }: PluginPageProps) {
   const [query, setQuery] = useState('');
+  const [selectedDoc, setSelectedDoc] = useState<DocumentEntry | null>(null);
   const { data, loading, error, refresh } = usePluginData<DocumentsData>('documents', {
     companyId: context.companyId,
     query: query || undefined,
@@ -36,6 +55,17 @@ export function DocumentsPage({ context }: PluginPageProps) {
     } finally {
       setReindexing(false);
     }
+  }
+
+  if (selectedDoc) {
+    return (
+      <DocumentViewer
+        doc={selectedDoc}
+        companyId={context.companyId!}
+        companyPrefix={context.companyPrefix ?? ''}
+        onBack={() => setSelectedDoc(null)}
+      />
+    );
   }
 
   const grouped = groupByProject(data?.documents ?? []);
@@ -75,12 +105,13 @@ export function DocumentsPage({ context }: PluginPageProps) {
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {docs.map((doc) => (
-              <div key={`${doc.issueId}-${doc.documentKey}`} style={docRowStyle}>
+              <div
+                key={`${doc.issueId}-${doc.documentKey}`}
+                onClick={() => setSelectedDoc(doc)}
+                style={docRowStyle}
+              >
                 <div style={{ flex: 1 }}>
                   <span style={{ fontWeight: 500 }}>{doc.documentTitle}</span>
-                  <span style={{ color: '#666', marginLeft: '8px', fontSize: '13px' }}>
-                    {doc.issueIdentifier} &middot; {doc.issueTitle}
-                  </span>
                 </div>
                 <span style={{ fontSize: '12px', color: '#999' }}>
                   {new Date(doc.updatedAt).toLocaleDateString()}
@@ -95,6 +126,49 @@ export function DocumentsPage({ context }: PluginPageProps) {
         <p style={{ marginTop: '24px', fontSize: '12px', color: '#999' }}>
           Last indexed: {new Date(data.lastIndexedAt).toLocaleString()}
         </p>
+      )}
+    </div>
+  );
+}
+
+function DocumentViewer({
+  doc,
+  companyId,
+  companyPrefix,
+  onBack,
+}: {
+  doc: DocumentEntry;
+  companyId: string;
+  companyPrefix: string;
+  onBack: () => void;
+}) {
+  const { data, loading, error } = usePluginData<DocumentContent | null>('document-content', {
+    companyId,
+    issueId: doc.issueId,
+    documentKey: doc.documentKey,
+  });
+
+  return (
+    <div style={{ padding: '24px', maxWidth: '960px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+        <button onClick={onBack} style={buttonStyle}>&larr; Back</button>
+        <h1 style={{ fontSize: '20px', fontWeight: 600, margin: 0 }}>{data?.title ?? doc.documentTitle}</h1>
+      </div>
+
+      <div style={{ fontSize: '13px', color: '#666', marginBottom: '16px' }}>
+        From <a href={`/${companyPrefix}/issues/${doc.issueIdentifier}#document-${doc.documentKey}`} style={{ color: '#2563eb' }}>{doc.issueIdentifier}</a>
+        {doc.projectName && <span> &middot; {doc.projectName}</span>}
+      </div>
+
+      {loading && <p style={{ color: '#666' }}>Loading document...</p>}
+      {error && <p style={{ color: '#dc2626' }}>Error loading document: {error.message}</p>}
+
+      {data && (
+        <div style={contentStyle}>
+          <pre style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', margin: 0, fontFamily: 'inherit', fontSize: '14px', lineHeight: '1.6' }}>
+            {data.body}
+          </pre>
+        </div>
       )}
     </div>
   );
@@ -131,8 +205,16 @@ const searchStyle: React.CSSProperties = {
 const docRowStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
-  padding: '8px 12px',
+  padding: '10px 14px',
   borderRadius: '6px',
   border: '1px solid #eee',
+  background: '#fafafa',
+  cursor: 'pointer',
+};
+
+const contentStyle: React.CSSProperties = {
+  padding: '20px',
+  borderRadius: '8px',
+  border: '1px solid #e5e7eb',
   background: '#fafafa',
 };
