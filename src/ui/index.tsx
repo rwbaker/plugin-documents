@@ -28,9 +28,14 @@ interface DocumentContent {
 
 export function DocumentsSidebarLink({ context }: PluginSidebarProps) {
   const prefix = context.companyPrefix ?? '';
+  const isActive = typeof window !== 'undefined' && window.location.pathname === `/${prefix}/documents`;
+  const baseClasses = 'flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium transition-colors';
+  const stateClasses = isActive
+    ? 'bg-accent/50 text-foreground'
+    : 'text-foreground/80 hover:bg-accent/50 hover:text-foreground';
   return (
     <a
-      className="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium transition-colors text-foreground/80 hover:bg-accent/50 hover:text-foreground"
+      className={`${baseClasses} ${stateClasses}`}
       href={`/${prefix}/documents`}
       data-discover="true"
     >

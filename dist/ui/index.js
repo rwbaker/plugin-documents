@@ -1238,10 +1238,13 @@ var Vt = x.lex;
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 function DocumentsSidebarLink({ context }) {
   const prefix = context.companyPrefix ?? "";
+  const isActive = typeof window !== "undefined" && window.location.pathname === `/${prefix}/documents`;
+  const baseClasses = "flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium transition-colors";
+  const stateClasses = isActive ? "bg-accent/50 text-foreground" : "text-foreground/80 hover:bg-accent/50 hover:text-foreground";
   return /* @__PURE__ */ jsxs(
     "a",
     {
-      className: "flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium transition-colors text-foreground/80 hover:bg-accent/50 hover:text-foreground",
+      className: `${baseClasses} ${stateClasses}`,
       href: `/${prefix}/documents`,
       "data-discover": "true",
       children: [
