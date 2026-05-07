@@ -16,12 +16,14 @@ A Paperclip plugin that surfaces all issue documents in one place. Browse, searc
 
 ## Installation
 
-Install from GitHub into your Paperclip plugins directory:
+There is no separate UI step. The Paperclip host auto-discovers plugins from `node_modules/` in the plugins directory. Installing the npm package is the full installation.
 
 ```bash
 cd /path/to/.paperclip/plugins
 npm install github:rwbaker/plugin-documents
 ```
+
+After `npm install` completes, the host scans the plugins directory, reads each package's `paperclipPlugin.manifest` pointer from `package.json`, imports the manifest module, validates capabilities, and registers the plugin's UI slots (sidebar link, pages, detail tabs). No restart or additional command is needed — the plugin appears in the Paperclip UI automatically.
 
 ### Gotchas we hit during setup
 
